@@ -12,16 +12,30 @@ export default function Incidents(){
     const navigation = useNavigation();
     const [incidents, setIncidents] = useState([]);
     const [total, setTotal] = useState(0);
+    
+    const [page,setPage] = useState(1);
+    const [loading,setLoading] = useState(false);
 
     function navigateToDetail(incident){
         navigation.navigate('Detail',{incident});
     }
 
     async function loadIncidents(){
-        const response = await api.get('incidents');
 
-        setIncidents(response.data);
+        if(loading || (total>0 && incidents.length == total)){
+            return;
+        }
+
+        setLoading(true);
+
+        const response = await api.get('incidents',{
+            params: {page}
+        });
+
+        setIncidents([... incidents, ...response.data]); // ... copia o valor, neste caso copia dois vetores para um outro vetor.
         setTotal(response.headers['x-total-count']);
+        setPage(page+1);
+        setLoading(false);
     }
 
     useEffect(() => {
@@ -45,6 +59,8 @@ export default function Incidents(){
                 style={styles.incidentList}
                 keyExtractor={incident => String(incident.id)}
                 showsVerticalScrollIndicator={false}
+                onEndReached={loadIncidents} //Recebe uma função que é disparada ao chegar no final da lista
+                onEndReachedThreshold={0.2} //Quantos porcento do final da lista o usuario precisa estar para carregar novos itens
                 renderItem={({ item: incident }) => (
                     <View style={styles.incident}>
                         <Text style={styles.incidentProperty}>ONG:</Text>
